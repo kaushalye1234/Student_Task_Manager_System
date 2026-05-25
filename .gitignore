@@ -1,96 +1,15 @@
-# Workspace-wide .gitignore for Student Task Manager System
+# Java / Spring Boot
+backend/target/
 
-# --- Operating System Files ---
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# React
+frontend/node_modules/
+frontend/dist/
 
-# --- IDEs and Editors ---
-.idea/
-*.iml
-*.iws
-*.ipr
+# IDE
 .vscode/
-!.vscode/extensions.json
-.settings/
-.classpath
-.project
-.factorypath
-.springBeans
-.sts4-cache
-.apt_generated
-nbproject/
-nbbuild/
-nbdist/
-.nb-gradle/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
+.idea/
 
-# --- Node / Frontend dependencies & build ---
-node_modules/
-jspm_packages/
-web_modules/
-.npm/
-.eslintcache
-.stylelintcache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-.node_repl_history
-*.tgz
-.yarn-integrity
-.lerna
-
-# Frontend build outputs & caches
-dist/
-build/
-out/
-.next/
-.nuxt/
-.svelte-kit/
-.cache/
-.parcel-cache/
-.turbo/
-.vercel/
-
-# --- Environment Variables / Secrets ---
+# Local database / secret files
+backend/src/main/resources/application.properties
+task_manager_db.session.sql
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env
-*.env.local
-
-# --- Java / Maven / Backend ---
-target/
-!**/src/main/**/target/
-!**/src/test/**/target/
-.mvn/wrapper/maven-wrapper.jar
-*.class
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# --- Logs & Temp ---
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-*.temp
-*.tmp
