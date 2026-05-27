@@ -1,41 +1,52 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import type { Task } from "./types/Task";
 import "./App.css";
+
+type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
+type FilterStatus = "ALL" | TaskStatus;
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
 
   const API_URL = "http://localhost:8080/api/tasks";
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const response = await axios.get<Task[]>(API_URL);
       setTasks(response.data);
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
-  };
+  }, [API_URL]);
 
   const addTask = async () => {
     if (!title.trim()) {
-      alert("Title is required");
+      alert("Task title is required");
+      return;
+    }
+
+    if (!dueDate) {
+      alert("Due date is required");
       return;
     }
 
     const newTask = {
       title,
       description,
-      status: "PENDING",
-      dueDate: "2026-06-01",
+      status: "PENDING" as TaskStatus,
+      dueDate,
     };
 
     try {
       await axios.post(API_URL, newTask);
       setTitle("");
       setDescription("");
+      setDueDate("");
       fetchTasks();
     } catch (error) {
       console.error("Error adding task:", error);
@@ -43,6 +54,12 @@ function App() {
   };
 
   const deleteTask = async (id: number) => {
+    const confirmDelete = confirm("Are you sure you want to delete this task?");
+
+    if (!confirmDelete) {
+      return;
+    }
+
     try {
       await axios.delete(`${API_URL}/${id}`);
       fetchTasks();
@@ -51,10 +68,7 @@ function App() {
     }
   };
 
-  const updateStatus = async (
-    task: Task,
-    newStatus: "PENDING" | "IN_PROGRESS" | "COMPLETED"
-  ) => {
+  const updateStatus = async (task: Task, newStatus: TaskStatus) => {
     const updatedTask = {
       ...task,
       status: newStatus,
@@ -69,77 +83,162 @@ function App() {
   };
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load initial tasks from API.
+    void fetchTasks();
+  }, [fetchTasks]);
+
+  const filteredTasks =
+    filterStatus === "ALL"
+      ? tasks
+      : tasks.filter((task) => task.status === filterStatus);
+
+  const pendingCount = tasks.filter((task) => task.status === "PENDING").length;
+  const inProgressCount = tasks.filter(
+    (task) => task.status === "IN_PROGRESS"
+  ).length;
+  const completedCount = tasks.filter(
+    (task) => task.status === "COMPLETED"
+  ).length;
 
   return (
-    <div className="app-container">
-      <h1>Student Task Manager</h1>
-      <p className="subtitle">React + Spring Boot + MySQL</p>
+    <div className="page">
+      <div className="app-container">
+        <header className="hero-section">
+          <div>
+            <p className="small-title">Internship Practice Project</p>
+            <h1>Student Task Manager</h1>
+            <p className="subtitle">
+              Manage your study tasks, assignments, and deadlines using React,
+              Spring Boot, and MySQL.
+            </p>
+          </div>
+        </header>
 
-      <div className="form-card">
-        <h2>Add New Task</h2>
+        <section className="stats-grid">
+          <div className="stat-card">
+            <h3>{tasks.length}</h3>
+            <p>Total Tasks</p>
+          </div>
 
-        <input
-          type="text"
-          placeholder="Task Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+          <div className="stat-card">
+            <h3>{pendingCount}</h3>
+            <p>Pending</p>
+          </div>
 
-        <textarea
-          placeholder="Task Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+          <div className="stat-card">
+            <h3>{inProgressCount}</h3>
+            <p>In Progress</p>
+          </div>
 
-        <button onClick={addTask}>Add Task</button>
-      </div>
+          <div className="stat-card">
+            <h3>{completedCount}</h3>
+            <p>Completed</p>
+          </div>
+        </section>
 
-      <div className="task-list">
-        <h2>My Tasks</h2>
+        <section className="content-grid">
+          <div className="form-card">
+            <h2>Add New Task</h2>
 
-        {tasks.length === 0 ? (
-          <p>No tasks found.</p>
-        ) : (
-          tasks.map((task) => (
-            <div className="task-card" key={task.id}>
-              <h3>{task.title}</h3>
-              <p>{task.description}</p>
+            <label>Task Title</label>
+            <input
+              type="text"
+              placeholder="Example: Study React"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
 
-              <p>
-                <strong>Status:</strong> {task.status}
-              </p>
+            <label>Description</label>
+            <textarea
+              placeholder="Example: Complete frontend task manager UI"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
 
-              <p>
-                <strong>Due:</strong> {task.dueDate}
-              </p>
+            <label>Due Date</label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
 
-              <div className="button-group">
-                <button
-                  className="progress-btn"
-                  onClick={() => updateStatus(task, "IN_PROGRESS")}
-                >
-                  In Progress
-                </button>
+            <button className="primary-btn" onClick={addTask}>
+              Add Task
+            </button>
+          </div>
 
-                <button
-                  className="complete-btn"
-                  onClick={() => updateStatus(task, "COMPLETED")}
-                >
-                  Complete
-                </button>
-
-                <button
-                  className="delete-btn"
-                  onClick={() => deleteTask(task.id)}
-                >
-                  Delete
-                </button>
+          <div className="task-section">
+            <div className="task-header">
+              <div>
+                <h2>My Tasks</h2>
+                <p>{filteredTasks.length} task(s) shown</p>
               </div>
+
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+              >
+                <option value="ALL">All Tasks</option>
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
             </div>
-          ))
-        )}
+
+            {filteredTasks.length === 0 ? (
+              <div className="empty-box">
+                <h3>No tasks found</h3>
+                <p>Add a new task or change the filter.</p>
+              </div>
+            ) : (
+              <div className="task-list">
+                {filteredTasks.map((task) => (
+                  <div className="task-card" key={task.id}>
+                    <div className="task-card-header">
+                      <h3>{task.title}</h3>
+                      <span
+                        className={`status-badge ${task.status
+                          .toLowerCase()
+                          .replace("_", "-")}`}
+                      >
+                        {task.status.replace("_", " ")}
+                      </span>
+                    </div>
+
+                    <p className="task-description">{task.description}</p>
+
+                    <div className="task-meta">
+                      <span>Due: {task.dueDate}</span>
+                    </div>
+
+                    <div className="button-group">
+                      <button
+                        className="progress-btn"
+                        onClick={() => updateStatus(task, "IN_PROGRESS")}
+                      >
+                        In Progress
+                      </button>
+
+                      <button
+                        className="complete-btn"
+                        onClick={() => updateStatus(task, "COMPLETED")}
+                      >
+                        Complete
+                      </button>
+
+                      <button
+                        className="delete-btn"
+                        onClick={() => deleteTask(task.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
