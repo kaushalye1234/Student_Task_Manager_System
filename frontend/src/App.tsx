@@ -3,6 +3,7 @@ import axios from "axios";
 import type { Task } from "./types/Task";
 import "./App.css";
 
+
 type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
 type FilterStatus = "ALL" | TaskStatus;
 
@@ -12,6 +13,9 @@ function App() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
+  const [aiTopic, setAiTopic] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const API_URL = "http://localhost:8080/api/tasks";
 
@@ -22,7 +26,7 @@ function App() {
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
-  }, [API_URL]);
+  }, []);
 
   const addTask = async () => {
     if (!title.trim()) {
@@ -82,10 +86,50 @@ function App() {
     }
   };
 
+  const generateSuggestions = async () => {
+    if (!aiTopic.trim()) {
+      alert("Please enter a topic");
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const response = await axios.post<{ suggestions: string[] }>(
+        "http://localhost:8080/api/ai/suggest-tasks",
+        { topic: aiTopic }
+      );
+
+      setSuggestions(response.data.suggestions);
+    } catch (error) {
+      console.error("Error generating suggestions:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const addSuggestionAsTask = async (suggestion: string) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const newTask = {
+      title: suggestion,
+      description: "AI suggested study task",
+      status: "PENDING" as TaskStatus,
+      dueDate: tomorrow.toISOString().split("T")[0],
+    };
+
+    try {
+      await axios.post(API_URL, newTask);
+      fetchTasks();
+    } catch (error) {
+      console.error("Error adding AI suggestion as task:", error);
+    }
+  };
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- load initial tasks from API.
-    void fetchTasks();
-  }, [fetchTasks]);
+    fetchTasks();
+  }, []);
 
   const filteredTasks =
     filterStatus === "ALL"
@@ -135,7 +179,44 @@ function App() {
             <p>Completed</p>
           </div>
         </section>
+        <section className="ai-section">
+          <div className="ai-card">
+            <div>
+              <p className="small-title-dark">AI Study Planner</p>
+              <h2>Generate Study Task Suggestions</h2>
+              <p>
+                Enter a topic like React, Spring Boot, MySQL, OS, or internship interview.
+                The system will suggest useful study tasks.
+              </p>
+            </div>
 
+            <div className="ai-input-row">
+              <input
+                type="text"
+                placeholder="Example: React final exam"
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+              />
+
+              <button className="primary-btn" onClick={generateSuggestions}>
+                {isGenerating ? "Generating..." : "Generate"}
+              </button>
+            </div>
+
+            {suggestions.length > 0 && (
+              <div className="suggestion-list">
+                {suggestions.map((suggestion, index) => (
+                  <div className="suggestion-card" key={index}>
+                    <span>{suggestion}</span>
+                    <button onClick={() => addSuggestionAsTask(suggestion)}>
+                      Add as Task
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
         <section className="content-grid">
           <div className="form-card">
             <h2>Add New Task</h2>
