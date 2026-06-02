@@ -3,11 +3,18 @@ package com.chamindu.taskManager.model;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
 
 @Entity
 @Table(name = "tasks")
 public class Task {
-    
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private AppUser user;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,7 +25,7 @@ public class Task {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    private TaskStatus status= TaskStatus.PENDING;
+    private TaskStatus status = TaskStatus.PENDING;
 
     private LocalDate dueDate;
 
@@ -32,7 +39,8 @@ public class Task {
     public Task() {
     }
 
-    public Task(Long id, String title, String description, TaskStatus status, LocalDate dueDate, LocalDateTime createdAt) {
+    public Task(Long id, String title, String description, TaskStatus status, LocalDate dueDate,
+            LocalDateTime createdAt) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -85,8 +93,17 @@ public class Task {
         return createdAt;
     }
 
-
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
+    public void setUser(AppUser user) {
+        this.user = user;
+    }
+
+    public AppUser getUser() {
+        return user;
+    }
+
+   
 }
