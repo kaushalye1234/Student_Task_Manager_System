@@ -1,32 +1,114 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import type { Task } from "./types/Task";
 import "./App.css";
 
-
 type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
 type FilterStatus = "ALL" | TaskStatus;
+type AuthMode = "LOGIN" | "REGISTER";
+
+interface AuthUser {
+  id: number;
+  fullName: string;
+  email: string;
+  message: string;
+}
 
 function App() {
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authMode, setAuthMode] = useState<AuthMode>("LOGIN");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
+
   const [aiTopic, setAiTopic] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const API_URL = "http://localhost:8080/api/tasks";
+  const AUTH_URL = "http://localhost:8080/api/auth";
 
-  const fetchTasks = useCallback(async () => {
+  useEffect(() => {
+    const savedUser = localStorage.getItem("taskManagerUser");
+
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchTasks();
+    }
+  }, [currentUser]);
+
+  const registerUser = async () => {
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    try {
+      const response = await axios.post<AuthUser>(`${AUTH_URL}/register`, {
+        fullName,
+        email,
+        password,
+      });
+
+      alert(response.data.message);
+      setAuthMode("LOGIN");
+      setFullName("");
+      setPassword("");
+    } catch (error) {
+      console.error("Registration error:", error);
+      alert("Registration failed. Email may already be registered.");
+    }
+  };
+
+  const loginUser = async () => {
+    if (!email.trim() || !password.trim()) {
+      alert("Please enter email and password");
+      return;
+    }
+
+    try {
+      const response = await axios.post<AuthUser>(`${AUTH_URL}/login`, {
+        email,
+        password,
+      });
+
+      setCurrentUser(response.data);
+      localStorage.setItem("taskManagerUser", JSON.stringify(response.data));
+
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Invalid email or password");
+    }
+  };
+
+  const logoutUser = () => {
+    localStorage.removeItem("taskManagerUser");
+    setCurrentUser(null);
+    setTasks([]);
+    setSuggestions([]);
+  };
+
+  const fetchTasks = async () => {
     try {
       const response = await axios.get<Task[]>(API_URL);
       setTasks(response.data);
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
-  }, []);
+  };
 
   const addTask = async () => {
     if (!title.trim()) {
@@ -127,10 +209,6 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
   const filteredTasks =
     filterStatus === "ALL"
       ? tasks
@@ -144,6 +222,75 @@ function App() {
     (task) => task.status === "COMPLETED"
   ).length;
 
+  if (!currentUser) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <p className="small-title-dark">AI-Powered Student Task Manager</p>
+
+          <h1>{authMode === "LOGIN" ? "Login" : "Create Account"}</h1>
+
+          <p className="auth-subtitle">
+            {authMode === "LOGIN"
+              ? "Login to manage your study tasks."
+              : "Register to start using your task manager."}
+          </p>
+
+          {authMode === "REGISTER" && (
+            <>
+              <label>Full Name</label>
+              <input
+                type="text"
+                placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </>
+          )}
+
+          <label>Email</label>
+          <input
+            type="email"
+            placeholder="example@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <label>Password</label>
+          <input
+            type="password"
+            placeholder="Minimum 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          {authMode === "LOGIN" ? (
+            <button className="primary-btn" onClick={loginUser}>
+              Login
+            </button>
+          ) : (
+            <button className="primary-btn" onClick={registerUser}>
+              Register
+            </button>
+          )}
+
+          <p className="auth-switch">
+            {authMode === "LOGIN"
+              ? "Don't have an account?"
+              : "Already have an account?"}{" "}
+            <button
+              onClick={() =>
+                setAuthMode(authMode === "LOGIN" ? "REGISTER" : "LOGIN")
+              }
+            >
+              {authMode === "LOGIN" ? "Register" : "Login"}
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page">
       <div className="app-container">
@@ -152,10 +299,14 @@ function App() {
             <p className="small-title">Internship Practice Project</p>
             <h1>Student Task Manager</h1>
             <p className="subtitle">
-              Manage your study tasks, assignments, and deadlines using React,
-              Spring Boot, and MySQL.
+              Welcome, {currentUser.fullName}. Manage your study tasks,
+              deadlines, and AI-generated study suggestions.
             </p>
           </div>
+
+          <button className="logout-btn" onClick={logoutUser}>
+            Logout
+          </button>
         </header>
 
         <section className="stats-grid">
@@ -179,14 +330,15 @@ function App() {
             <p>Completed</p>
           </div>
         </section>
+
         <section className="ai-section">
           <div className="ai-card">
             <div>
               <p className="small-title-dark">AI Study Planner</p>
               <h2>Generate Study Task Suggestions</h2>
               <p>
-                Enter a topic like React, Spring Boot, MySQL, OS, or internship interview.
-                The system will suggest useful study tasks.
+                Enter a topic like React, Spring Boot, MySQL, OS, or internship
+                interview. The system will suggest useful study tasks.
               </p>
             </div>
 
@@ -217,6 +369,7 @@ function App() {
             )}
           </div>
         </section>
+
         <section className="content-grid">
           <div className="form-card">
             <h2>Add New Task</h2>
@@ -257,7 +410,9 @@ function App() {
 
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+                onChange={(e) =>
+                  setFilterStatus(e.target.value as FilterStatus)
+                }
               >
                 <option value="ALL">All Tasks</option>
                 <option value="PENDING">Pending</option>

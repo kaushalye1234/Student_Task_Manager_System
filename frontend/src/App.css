@@ -180,3 +180,79 @@ button:hover {
     align-items: stretch;
   }
 }
+
+.auth-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 430px;
+  background: white;
+  padding: 32px;
+  border-radius: 24px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+}
+
+.auth-card h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+}
+
+.auth-subtitle {
+  color: #6b7280;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.auth-switch {
+  text-align: center;
+  margin-top: 20px;
+  color: #6b7280;
+}
+
+.auth-switch button {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.hero-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.logout-btn {
+  background: white;
+  color: #1e3a8a;
+  border: none;
+  padding: 11px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.logout-btn:hover {
+  background: #e0e7ff;
+}
+
+@media (max-width: 650px) {
+  .hero-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .logout-btn {
+    width: 100%;
+  }
+}
