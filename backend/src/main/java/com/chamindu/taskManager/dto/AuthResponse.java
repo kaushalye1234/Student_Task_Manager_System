@@ -5,15 +5,17 @@ public class AuthResponse {
     private String fullName;
     private String email;
     private String message;
+    private String token;
 
     public AuthResponse() {
     }
 
-    public AuthResponse(Long id, String fullName, String email, String message) {
+    public AuthResponse(Long id, String fullName, String email, String message, String token) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
         this.message = message;
+        this.token = token;
     }
 
     public Long getId() {
@@ -46,5 +48,13 @@ public class AuthResponse {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

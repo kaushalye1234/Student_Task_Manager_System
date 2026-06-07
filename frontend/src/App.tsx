@@ -12,6 +12,7 @@ interface AuthUser {
   fullName: string;
   email: string;
   message: string;
+  token: string;
 }
 
 function App() {
@@ -33,6 +34,11 @@ function App() {
 
   const API_URL = "http://localhost:8080/api/tasks";
   const AUTH_URL = "http://localhost:8080/api/auth";
+  const getAuthConfig = () => ({
+    headers: {
+      Authorization: `Bearer ${currentUser?.token}`,
+    },
+  });
 
   useEffect(() => {
     const savedUser = localStorage.getItem("taskManagerUser");
@@ -103,9 +109,8 @@ function App() {
 
   const fetchTasks = async () => {
     try {
-      const response = await axios.get<Task[]>(
-        `${API_URL}?userId=${currentUser?.id}`
-      );
+      const response = await axios.get<Task[]>(API_URL, getAuthConfig());
+    
       setTasks(response.data);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -131,7 +136,7 @@ function App() {
     };
 
     try {
-      await axios.post(`${API_URL}?userId=${currentUser?.id}`, newTask);
+      await axios.post(`${API_URL}?userId=${currentUser?.id}`, newTask, getAuthConfig());
       setTitle("");
       setDescription("");
       setDueDate("");
@@ -149,7 +154,7 @@ function App() {
     }
 
     try {
-      await axios.delete(`${API_URL}/${id}?userId=${currentUser?.id}`);
+      await axios.delete(`${API_URL}/${id}?userId=${currentUser?.id}`, getAuthConfig());
       fetchTasks();
     } catch (error) {
       console.error("Error deleting task:", error);
@@ -163,7 +168,7 @@ function App() {
     };
 
     try {
-      await axios.put(`${API_URL}/${task.id}?userId=${currentUser?.id}`, updatedTask);
+      await axios.put(`${API_URL}/${task.id}?userId=${currentUser?.id}`, updatedTask, getAuthConfig());
       fetchTasks();
     } catch (error) {
       console.error("Error updating task:", error);
@@ -204,7 +209,7 @@ function App() {
     };
 
     try {
-      await axios.post(`${API_URL}?userId=${currentUser?.id}`, newTask);
+      await axios.post(`${API_URL}?userId=${currentUser?.id}`, newTask, getAuthConfig());
       fetchTasks();
     } catch (error) {
       console.error("Error adding AI suggestion as task:", error);

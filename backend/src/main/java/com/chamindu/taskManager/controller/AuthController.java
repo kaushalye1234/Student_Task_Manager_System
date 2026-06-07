@@ -7,6 +7,7 @@ import com.chamindu.taskManager.model.AppUser;
 import com.chamindu.taskManager.repository.AppUserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import com.chamindu.taskManager.security.JwtUtil;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -15,10 +16,15 @@ public class AuthController {
 
     private final AppUserRepository appUserRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(AppUserRepository appUserRepository, BCryptPasswordEncoder passwordEncoder) {
+    public AuthController(
+            AppUserRepository appUserRepository,
+            BCryptPasswordEncoder passwordEncoder,
+            JwtUtil jwtUtil) {
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/register")
@@ -47,11 +53,14 @@ public class AuthController {
 
         AppUser savedUser = appUserRepository.save(user);
 
+        String token = jwtUtil.generateToken(savedUser.getEmail());
+
         return new AuthResponse(
                 savedUser.getId(),
                 savedUser.getFullName(),
                 savedUser.getEmail(),
-                "Registration successful"
+                "Registration successful",
+                token
         );
     }
 
@@ -63,18 +72,21 @@ public class AuthController {
 
         boolean passwordMatches = passwordEncoder.matches(
                 request.getPassword(),
-                user.getPassword()
-        );
+                user.getPassword());
 
         if (!passwordMatches) {
             throw new RuntimeException("Invalid email or password");
         }
 
+        String token = jwtUtil.generateToken(user.getEmail());
+        
         return new AuthResponse(
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
-                "Login successful"
+                "Login successful",
+                token
         );
+                
     }
 }
