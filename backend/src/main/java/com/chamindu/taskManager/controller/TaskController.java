@@ -5,6 +5,7 @@ import com.chamindu.taskManager.model.Task;
 import com.chamindu.taskManager.repository.AppUserRepository;
 import com.chamindu.taskManager.repository.TaskRepository;
 import com.chamindu.taskManager.security.JwtUtil;
+import com.chamindu.taskManager.exception.UnauthorizedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,19 +31,19 @@ public class TaskController {
 
     private AppUser getCurrentUser(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Missing or invalid Authorization header");
+            throw new UnauthorizedException("Missing or invalid Authorization header");
         }
 
         String token = authHeader.substring(7);
 
         if (!jwtUtil.isTokenValid(token)) {
-            throw new RuntimeException("Invalid or expired token");
+            throw new UnauthorizedException("Invalid or expired token");
         }
 
         String email = jwtUtil.getEmailFromToken(token);
 
         return appUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
     }
 
     @GetMapping
@@ -69,7 +70,7 @@ public class TaskController {
         AppUser user = getCurrentUser(authHeader);
 
         return taskRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new RuntimeException("Task not found for this user"));
+                .orElseThrow(() -> new UnauthorizedException("Task not found for this user"));
     }
 
     @PutMapping("/{id}")
@@ -81,7 +82,7 @@ public class TaskController {
         AppUser user = getCurrentUser(authHeader);
 
         Task existingTask = taskRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new RuntimeException("Task not found for this user"));
+                .orElseThrow(() -> new UnauthorizedException("Task not found for this user"));
 
         existingTask.setTitle(updatedTask.getTitle());
         existingTask.setDescription(updatedTask.getDescription());
@@ -99,7 +100,7 @@ public class TaskController {
         AppUser user = getCurrentUser(authHeader);
 
         Task existingTask = taskRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new RuntimeException("Task not found for this user"));
+                .orElseThrow(() -> new UnauthorizedException("Task not found for this user"));
 
         taskRepository.delete(existingTask);
 
