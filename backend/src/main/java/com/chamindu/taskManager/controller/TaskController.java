@@ -47,14 +47,14 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<Task> getAllTasks(@RequestHeader("Authorization") String authHeader) {
+    public List<Task> getAllTasks(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         AppUser user = getCurrentUser(authHeader);
         return taskRepository.findByUserId(user.getId());
     }
 
     @PostMapping
     public Task createTask(
-            @RequestHeader("Authorization") String authHeader,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestBody Task task
     ) {
         AppUser user = getCurrentUser(authHeader);
@@ -65,7 +65,7 @@ public class TaskController {
     @GetMapping("/{id}")
     public Task getTaskById(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader
+            @RequestHeader(value = "Authorization", required = false) String authHeader
     ) {
         AppUser user = getCurrentUser(authHeader);
 
@@ -76,7 +76,7 @@ public class TaskController {
     @PutMapping("/{id}")
     public Task updateTask(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestBody Task updatedTask
     ) {
         AppUser user = getCurrentUser(authHeader);
@@ -95,7 +95,7 @@ public class TaskController {
     @DeleteMapping("/{id}")
     public String deleteTask(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader
+            @RequestHeader(value = "Authorization", required = false) String authHeader
     ) {
         AppUser user = getCurrentUser(authHeader);
 

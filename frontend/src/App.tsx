@@ -34,6 +34,16 @@ function App() {
 
   const API_URL = "http://localhost:8080/api/tasks";
   const AUTH_URL = "http://localhost:8080/api/auth";
+  const isTokenExpired = (token: string) => {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const expiryTime = payload.exp * 1000;
+
+      return Date.now() >= expiryTime;
+    } catch (error) {
+      return true;
+    }
+  };
   const getAuthConfig = () => ({
     headers: {
       Authorization: `Bearer ${currentUser?.token}`,
@@ -44,7 +54,17 @@ function App() {
     const savedUser = localStorage.getItem("taskManagerUser");
 
     if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
+        const parsedUser: AuthUser = JSON.parse(savedUser);
+
+        if (!parsedUser.token || isTokenExpired(parsedUser.token)) {
+          localStorage.removeItem("taskManagerUser");
+          alert("Your session has expired. Please login again.");
+          return;
+        }
+
+        queueMicrotask(() => {
+          setCurrentUser(parsedUser);
+      });
     }
   }, []);
 
@@ -107,12 +127,30 @@ function App() {
     setSuggestions([]);
   };
 
+  const handleSessionExpired = () => {
+    localStorage.removeItem("taskManagerUser");
+    setCurrentUser(null);
+    setTasks([]);
+    setSuggestions([]);
+    alert("Your session expired. Please login again.");
+  };
+
+  const handleApiError = (error: unknown) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      handleSessionExpired();
+      return true;
+    }
+
+    return false;
+  };
+
   const fetchTasks = async () => {
     try {
       const response = await axios.get<Task[]>(API_URL, getAuthConfig());
-    
+
       setTasks(response.data);
     } catch (error) {
+      if (handleApiError(error)) return;
       console.error("Error fetching tasks:", error);
     }
   };
@@ -142,6 +180,7 @@ function App() {
       setDueDate("");
       fetchTasks();
     } catch (error) {
+      if (handleApiError(error)) return;
       console.error("Error adding task:", error);
     }
   };
@@ -157,6 +196,7 @@ function App() {
       await axios.delete(`${API_URL}/${id}?userId=${currentUser?.id}`, getAuthConfig());
       fetchTasks();
     } catch (error) {
+      if (handleApiError(error)) return;
       console.error("Error deleting task:", error);
     }
   };
@@ -171,6 +211,7 @@ function App() {
       await axios.put(`${API_URL}/${task.id}?userId=${currentUser?.id}`, updatedTask, getAuthConfig());
       fetchTasks();
     } catch (error) {
+      if (handleApiError(error)) return;
       console.error("Error updating task:", error);
     }
   };
@@ -191,6 +232,7 @@ function App() {
 
       setSuggestions(response.data.suggestions);
     } catch (error) {
+      if (handleApiError(error)) return;
       console.error("Error generating suggestions:", error);
     } finally {
       setIsGenerating(false);
@@ -212,6 +254,7 @@ function App() {
       await axios.post(`${API_URL}?userId=${currentUser?.id}`, newTask, getAuthConfig());
       fetchTasks();
     } catch (error) {
+      if (handleApiError(error)) return;
       console.error("Error adding AI suggestion as task:", error);
     }
   };
