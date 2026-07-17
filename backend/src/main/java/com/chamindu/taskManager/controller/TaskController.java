@@ -8,11 +8,19 @@ import com.chamindu.taskManager.security.JwtUtil;
 import com.chamindu.taskManager.exception.UnauthorizedException;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
-@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
+@Tag(
+        name = "Tasks",
+        description = "Create, view, update and delete tasks belonging to the logged-in user"
+)
+@SecurityRequirement(name = "bearerAuth")
 public class TaskController {
 
     private final TaskRepository taskRepository;
@@ -88,6 +96,7 @@ public class TaskController {
         existingTask.setDescription(updatedTask.getDescription());
         existingTask.setStatus(updatedTask.getStatus());
         existingTask.setDueDate(updatedTask.getDueDate());
+        existingTask.setPriority(updatedTask.getPriority());
 
         return taskRepository.save(existingTask);
     }

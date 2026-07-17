@@ -29,6 +29,9 @@ public class Task {
 
     private LocalDate dueDate;
 
+    @Enumerated(EnumType.STRING)
+    private TaskPriority priority = TaskPriority.MEDIUM;
+
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -39,12 +42,13 @@ public class Task {
     public Task() {
     }
 
-    public Task(Long id, String title, String description, TaskStatus status, LocalDate dueDate,
+    public Task(Long id, String title, String description, TaskStatus status, LocalDate dueDate, TaskPriority priority,
             LocalDateTime createdAt) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.status = status;
+        this.priority = priority;
         this.dueDate = dueDate;
         this.createdAt = createdAt;
     }
@@ -105,5 +109,12 @@ public class Task {
         return user;
     }
 
-   
+    public TaskPriority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(TaskPriority priority) {
+        this.priority = priority;
+    }
+
 }

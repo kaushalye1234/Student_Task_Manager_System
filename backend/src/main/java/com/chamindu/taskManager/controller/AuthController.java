@@ -5,13 +5,18 @@ import com.chamindu.taskManager.dto.LoginRequest;
 import com.chamindu.taskManager.dto.RegisterRequest;
 import com.chamindu.taskManager.model.AppUser;
 import com.chamindu.taskManager.repository.AppUserRepository;
+import com.chamindu.taskManager.security.JwtUtil;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import com.chamindu.taskManager.security.JwtUtil;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
+@Tag(
+        name = "Authentication",
+        description = "Register new users and log in to receive JWT tokens"
+)
 public class AuthController {
 
     private final AppUserRepository appUserRepository;

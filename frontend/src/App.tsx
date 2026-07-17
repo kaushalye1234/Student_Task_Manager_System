@@ -4,7 +4,9 @@ import type { Task } from "./types/Task";
 import "./App.css";
 
 type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
+type TaskPriority = "LOW" | "MEDIUM" | "HIGH";
 type FilterStatus = "ALL" | TaskStatus;
+type FilterPriority = "ALL" | TaskPriority;
 type AuthMode = "LOGIN" | "REGISTER";
 
 interface AuthUser {
@@ -26,7 +28,11 @@ function App() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
+  const [filterPriority, setFilterPriority] = useState<FilterPriority>("ALL");
+  const [searchText, setSearchText] = useState("");
+
 
   const [aiTopic, setAiTopic] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -54,16 +60,16 @@ function App() {
     const savedUser = localStorage.getItem("taskManagerUser");
 
     if (savedUser) {
-        const parsedUser: AuthUser = JSON.parse(savedUser);
+      const parsedUser: AuthUser = JSON.parse(savedUser);
 
-        if (!parsedUser.token || isTokenExpired(parsedUser.token)) {
-          localStorage.removeItem("taskManagerUser");
-          alert("Your session has expired. Please login again.");
-          return;
-        }
+      if (!parsedUser.token || isTokenExpired(parsedUser.token)) {
+        localStorage.removeItem("taskManagerUser");
+        alert("Your session has expired. Please login again.");
+        return;
+      }
 
-        queueMicrotask(() => {
-          setCurrentUser(parsedUser);
+      queueMicrotask(() => {
+        setCurrentUser(parsedUser);
       });
     }
   }, []);
@@ -170,6 +176,7 @@ function App() {
       title,
       description,
       status: "PENDING" as TaskStatus,
+      priority,
       dueDate,
     };
 
@@ -247,6 +254,7 @@ function App() {
       title: suggestion,
       description: "AI suggested study task",
       status: "PENDING" as TaskStatus,
+      priority: "MEDIUM" as TaskPriority,
       dueDate: tomorrow.toISOString().split("T")[0],
     };
 
@@ -259,11 +267,19 @@ function App() {
     }
   };
 
-  const filteredTasks =
-    filterStatus === "ALL"
-      ? tasks
-      : tasks.filter((task) => task.status === filterStatus);
+  const filteredTasks = tasks.filter((task) => {
+    const matchesStatus =
+      filterStatus === "ALL" || task.status === filterStatus;
 
+    const matchesPriority =
+      filterPriority === "ALL" || task.priority === filterPriority;
+
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchText.toLowerCase());
+
+    return matchesStatus && matchesPriority && matchesSearch;
+  });
   const pendingCount = tasks.filter((task) => task.status === "PENDING").length;
   const inProgressCount = tasks.filter(
     (task) => task.status === "IN_PROGRESS"
@@ -446,87 +462,119 @@ function App() {
               onChange={(e) => setDueDate(e.target.value)}
             />
 
+            <label>Priority</label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as TaskPriority)}
+            >
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+
             <button className="primary-btn" onClick={addTask}>
               Add Task
             </button>
           </div>
 
-          <div className="task-section">
-            <div className="task-header">
-              <div>
-                <h2>My Tasks</h2>
-                <p>{filteredTasks.length} task(s) shown</p>
-              </div>
-
-              <select
-                value={filterStatus}
-                onChange={(e) =>
-                  setFilterStatus(e.target.value as FilterStatus)
-                }
-              >
-                <option value="ALL">All Tasks</option>
-                <option value="PENDING">Pending</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
-              </select>
+          <div className="task-header">
+            <div>
+              <h2>My Tasks</h2>
+              <p>{filteredTasks.length} task(s) shown</p>
             </div>
-
-            {filteredTasks.length === 0 ? (
-              <div className="empty-box">
-                <h3>No tasks found</h3>
-                <p>Add a new task or change the filter.</p>
-              </div>
-            ) : (
-              <div className="task-list">
-                {filteredTasks.map((task) => (
-                  <div className="task-card" key={task.id}>
-                    <div className="task-card-header">
-                      <h3>{task.title}</h3>
-                      <span
-                        className={`status-badge ${task.status
-                          .toLowerCase()
-                          .replace("_", "-")}`}
-                      >
-                        {task.status.replace("_", " ")}
-                      </span>
-                    </div>
-
-                    <p className="task-description">{task.description}</p>
-
-                    <div className="task-meta">
-                      <span>Due: {task.dueDate}</span>
-                    </div>
-
-                    <div className="button-group">
-                      <button
-                        className="progress-btn"
-                        onClick={() => updateStatus(task, "IN_PROGRESS")}
-                      >
-                        In Progress
-                      </button>
-
-                      <button
-                        className="complete-btn"
-                        onClick={() => updateStatus(task, "COMPLETED")}
-                      >
-                        Complete
-                      </button>
-
-                      <button
-                        className="delete-btn"
-                        onClick={() => deleteTask(task.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
-        </section>
+
+          <div className="filter-row">
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+            >
+              <option value="ALL">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value as FilterPriority)}
+            >
+              <option value="ALL">All Priority</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+          </div>
+
+          {filteredTasks.length === 0 ? (
+            <div className="empty-box">
+              <h3>No tasks found</h3>
+              <p>Add a new task or change the filter.</p>
+            </div>
+          ) : (
+            <div className="task-list">
+              {filteredTasks.map((task) => (
+                <div className="task-card" key={task.id}>
+                  <div className="task-card-header">
+                    <h3>{task.title}</h3>
+                    <span
+                      className={`status-badge ${task.status
+                        .toLowerCase()
+                        .replace("_", "-")}`}
+                    >
+                      {task.status.replace("_", " ")}
+                    </span>
+                    <span
+                      className={`priority-badge ${(task.priority || "MEDIUM").toLowerCase()}`}
+                    >
+                      {(task.priority || "MEDIUM")} PRIORITY
+                    </span>
+                  </div>
+
+                  <p className="task-description">{task.description}</p>
+
+                  <div className="task-meta">
+                    <span>Due: {task.dueDate}</span>
+                  </div>
+
+                  <div className="button-group">
+                    <button
+                      className="progress-btn"
+                      onClick={() => updateStatus(task, "IN_PROGRESS")}
+                    >
+                      In Progress
+                    </button>
+
+                    <button
+                      className="complete-btn"
+                      onClick={() => updateStatus(task, "COMPLETED")}
+                    >
+                      Complete
+                    </button>
+
+                    <button
+                      className="delete-btn"
+                      onClick={() => deleteTask(task.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          </section>
       </div>
-    </div>
+  
+      </div >
+    
   );
 }
 

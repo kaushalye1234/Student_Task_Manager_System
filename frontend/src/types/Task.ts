@@ -3,6 +3,7 @@ export interface Task {
     title: string;
     description: string;
     status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+    priority: "LOW" | "MEDIUM" | "HIGH";
     dueDate: string; // ISO date string
     createdAt: string; // ISO date string
 }

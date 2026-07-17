@@ -256,3 +256,48 @@ button:hover {
     width: 100%;
   }
 }
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 160px 160px;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.filter-row input,
+.filter-row select {
+  margin-bottom: 0;
+}
+
+.task-card-header {
+  flex-wrap: wrap;
+}
+
+.priority-badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.priority-badge.low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.priority-badge.medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.priority-badge.high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 750px) {
+  .filter-row {
+    grid-template-columns: 1fr;
+  }
+}
