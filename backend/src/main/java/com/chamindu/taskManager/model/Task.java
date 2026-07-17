@@ -7,6 +7,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "tasks")
@@ -20,15 +24,22 @@ public class Task {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Title is required")
+    @Size(max = 120, message = "Title must be less than 120 characters")
     private String title;
 
+    @Size(max = 1000, message = "Description must be less than 1000 characters")
     private String description;
 
+    @NotNull(message = "Status is required")
     @Enumerated(EnumType.STRING)
     private TaskStatus status = TaskStatus.PENDING;
 
+    @NotNull(message = "Due date is required")
+    @FutureOrPresent(message = "Due date must be a future date")
     private LocalDate dueDate;
 
+    @NotNull(message = "Priority is required")
     @Enumerated(EnumType.STRING)
     private TaskPriority priority = TaskPriority.MEDIUM;
 

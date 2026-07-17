@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class TaskController {
     private final TaskRepository taskRepository;
     private final AppUserRepository appUserRepository;
     private final JwtUtil jwtUtil;
+
 
     public TaskController(
             TaskRepository taskRepository,
@@ -63,7 +65,7 @@ public class TaskController {
     @PostMapping
     public Task createTask(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestBody Task task
+            @Valid @RequestBody Task task
     ) {
         AppUser user = getCurrentUser(authHeader);
         task.setUser(user);
@@ -85,7 +87,7 @@ public class TaskController {
     public Task updateTask(
             @PathVariable Long id,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestBody Task updatedTask
+            @Valid @RequestBody Task updatedTask
     ) {
         AppUser user = getCurrentUser(authHeader);
 
