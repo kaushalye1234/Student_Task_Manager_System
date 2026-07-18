@@ -13,9 +13,15 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    // Handles validation errors such as blank title or past due date
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(
             MethodArgumentNotValidException ex
@@ -29,6 +35,8 @@ public class GlobalExceptionHandler {
                                 + error.getDefaultMessage()
                 )
                 .collect(Collectors.joining(", "));
+        
+        log.warn("Request validation failed: {}", message);
 
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
@@ -41,11 +49,14 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST
         );
     }
-
+    // Handles your custom BadRequestException
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequestException(
             BadRequestException ex
     ) {
+
+        log.warn("Bad request: {}", ex.getMessage());
+
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
@@ -57,11 +68,14 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST
         );
     }
-
+    // Handles invalid JSON or invalid enum values
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleInvalidJson(
             HttpMessageNotReadableException ex
     ) {
+
+        log.warn("Invalid JSON request body");
+
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Invalid Request Body",
@@ -73,11 +87,17 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST
         );
     }
-
+    // Handles invalid URL values such as /api/tasks/abc
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(
             MethodArgumentTypeMismatchException ex
     ) {
+        log.warn(
+                "Invalid parameter: name={}, value={}",
+                ex.getName(),
+                ex.getValue()
+        );
+
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Invalid Parameter",
@@ -90,10 +110,14 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // Handles missing or invalid JWT tokens
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorizedException(
             UnauthorizedException ex
     ) {
+
+        log.warn("Unauthorized request: {}", ex.getMessage());
+
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.UNAUTHORIZED.value(),
                 "Unauthorized",
@@ -106,10 +130,12 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // Handles resources that cannot be found
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException ex
     ) {
+        log.warn("Resource not found: {}", ex.getMessage());
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
@@ -122,10 +148,13 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // Handles all unexpected backend errors
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(
             Exception ex
     ) {
+        // This prints the full technical error in Docker logs
+        log.error("Unexpected server error", ex);
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",

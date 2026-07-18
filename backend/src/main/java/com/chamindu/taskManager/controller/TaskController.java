@@ -12,6 +12,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.chamindu.taskManager.exception.ResourceNotFoundException;
 
 import java.util.List;
@@ -22,6 +25,7 @@ import java.util.List;
 @Tag(name = "Tasks", description = "Create, view, update and delete tasks belonging to the logged-in user")
 @SecurityRequirement(name = "bearerAuth")
 public class TaskController {
+    private static final Logger log = LoggerFactory.getLogger(TaskController.class);
 
     private final TaskRepository taskRepository;
     private final AppUserRepository appUserRepository;
@@ -37,26 +41,46 @@ public class TaskController {
     }
 
     private AppUser getCurrentUser(String authHeader) {
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new UnauthorizedException("Missing or invalid Authorization header");
+            log.warn("Task API request rejected: missing or invalid Authorization header");
+
+            throw new UnauthorizedException(
+                    "Missing or invalid Authorization header");
         }
 
         String token = authHeader.substring(7);
 
         if (!jwtUtil.isTokenValid(token)) {
-            throw new UnauthorizedException("Invalid or expired token");
+            log.warn("Task API request rejected: invalid or expired JWT");
+
+            throw new UnauthorizedException(
+                    "Invalid or expired token");
         }
 
         String email = jwtUtil.getEmailFromToken(token);
 
         return appUserRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    log.warn("JWT belongs to a user that no longer exists");
+
+                    return new UnauthorizedException("User not found");
+                });
     }
 
     @GetMapping
-    public List<Task> getAllTasks(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public List<Task> getAllTasks(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         AppUser user = getCurrentUser(authHeader);
-        return taskRepository.findByUserId(user.getId());
+
+        List<Task> tasks = taskRepository.findByUserId(user.getId());
+
+        log.info(
+                "Retrieved {} tasks for userId={}",
+                tasks.size(),
+                user.getId());
+
+        return tasks;
     }
 
     @PostMapping
@@ -64,8 +88,17 @@ public class TaskController {
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody Task task) {
         AppUser user = getCurrentUser(authHeader);
+
         task.setUser(user);
-        return taskRepository.save(task);
+
+        Task savedTask = taskRepository.save(task);
+
+        log.info(
+                "Created task id={} for userId={}",
+                savedTask.getId(),
+                user.getId());
+
+        return savedTask;
     }
 
     @GetMapping("/{id}")
@@ -74,8 +107,15 @@ public class TaskController {
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         AppUser user = getCurrentUser(authHeader);
 
-        return taskRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found for this user"));
+        Task task = taskRepository.findByIdAndUserId(id, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        log.info(
+                "Retrieved task id={} for userId={}",
+                task.getId(),
+                user.getId());
+
+        return task;
     }
 
     @PutMapping("/{id}")
@@ -94,7 +134,14 @@ public class TaskController {
         existingTask.setDueDate(updatedTask.getDueDate());
         existingTask.setPriority(updatedTask.getPriority());
 
-        return taskRepository.save(existingTask);
+        Task savedTask = taskRepository.save(existingTask);
+
+        log.info(
+                "Updated task id={} for userId={}",
+                savedTask.getId(),
+                user.getId());
+
+        return savedTask;
     }
 
     @DeleteMapping("/{id}")
@@ -107,6 +154,12 @@ public class TaskController {
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         taskRepository.delete(existingTask);
+        
+        log.info(
+                "Deleted task id={} for userId={}",
+                existingTask.getId(),
+                user.getId());
+
 
         return "Task deleted successfully";
     }

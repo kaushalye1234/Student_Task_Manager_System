@@ -10,14 +10,19 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import com.chamindu.taskManager.exception.BadRequestException;
+import com.chamindu.taskManager.exception.UnauthorizedException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
-@Tag(
-        name = "Authentication",
-        description = "Register new users and log in to receive JWT tokens"
-)
+@Tag(name = "Authentication", description = "Register new users and log in to receive JWT tokens")
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final AppUserRepository appUserRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -36,19 +41,19 @@ public class AuthController {
     public AuthResponse register(@RequestBody RegisterRequest request) {
 
         if (request.getFullName() == null || request.getFullName().trim().isEmpty()) {
-            throw new RuntimeException("Full name is required");
+            throw new BadRequestException("Full name is required");
         }
 
         if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
-            throw new RuntimeException("Email is required");
+            throw new BadRequestException("Email is required");
         }
 
         if (request.getPassword() == null || request.getPassword().length() < 6) {
-            throw new RuntimeException("Password must be at least 6 characters");
+            throw new BadRequestException("Password must be at least 6 characters");
         }
 
         if (appUserRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            throw new BadRequestException("Email already registered");
         }
 
         AppUser user = new AppUser();
@@ -58,6 +63,10 @@ public class AuthController {
 
         AppUser savedUser = appUserRepository.save(user);
 
+        log.info(
+                "Registered new user with userId={}",
+                savedUser.getId());
+
         String token = jwtUtil.generateToken(savedUser.getEmail());
 
         return new AuthResponse(
@@ -65,33 +74,43 @@ public class AuthController {
                 savedUser.getFullName(),
                 savedUser.getEmail(),
                 "Registration successful",
-                token
-        );
+                token);
     }
 
     @PostMapping("/login")
     public AuthResponse login(@RequestBody LoginRequest request) {
 
         AppUser user = appUserRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                .orElseThrow(() -> {
+                    log.warn("Login rejected: invalid credentials");
+
+                    return new UnauthorizedException(
+                            "Invalid email or password");
+                });
 
         boolean passwordMatches = passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword());
 
         if (!passwordMatches) {
-            throw new RuntimeException("Invalid email or password");
+            log.warn("Login rejected: invalid credentials");
+
+            throw new UnauthorizedException(
+                    "Invalid email or password");
         }
 
+        log.info(
+                "User login successful for userId={}",
+                user.getId());
+
         String token = jwtUtil.generateToken(user.getEmail());
-        
+
         return new AuthResponse(
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
                 "Login successful",
-                token
-        );
-                
+                token);
+
     }
 }
