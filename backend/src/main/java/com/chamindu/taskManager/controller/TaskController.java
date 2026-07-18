@@ -12,15 +12,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+import com.chamindu.taskManager.exception.ResourceNotFoundException;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
-@Tag(
-        name = "Tasks",
-        description = "Create, view, update and delete tasks belonging to the logged-in user"
-)
+@Tag(name = "Tasks", description = "Create, view, update and delete tasks belonging to the logged-in user")
 @SecurityRequirement(name = "bearerAuth")
 public class TaskController {
 
@@ -28,12 +27,10 @@ public class TaskController {
     private final AppUserRepository appUserRepository;
     private final JwtUtil jwtUtil;
 
-
     public TaskController(
             TaskRepository taskRepository,
             AppUserRepository appUserRepository,
-            JwtUtil jwtUtil
-    ) {
+            JwtUtil jwtUtil) {
         this.taskRepository = taskRepository;
         this.appUserRepository = appUserRepository;
         this.jwtUtil = jwtUtil;
@@ -53,7 +50,7 @@ public class TaskController {
         String email = jwtUtil.getEmailFromToken(token);
 
         return appUserRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     @GetMapping
@@ -65,8 +62,7 @@ public class TaskController {
     @PostMapping
     public Task createTask(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @Valid @RequestBody Task task
-    ) {
+            @Valid @RequestBody Task task) {
         AppUser user = getCurrentUser(authHeader);
         task.setUser(user);
         return taskRepository.save(task);
@@ -75,24 +71,22 @@ public class TaskController {
     @GetMapping("/{id}")
     public Task getTaskById(
             @PathVariable Long id,
-            @RequestHeader(value = "Authorization", required = false) String authHeader
-    ) {
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         AppUser user = getCurrentUser(authHeader);
 
         return taskRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new UnauthorizedException("Task not found for this user"));
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found for this user"));
     }
 
     @PutMapping("/{id}")
     public Task updateTask(
             @PathVariable Long id,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @Valid @RequestBody Task updatedTask
-    ) {
+            @Valid @RequestBody Task updatedTask) {
         AppUser user = getCurrentUser(authHeader);
 
         Task existingTask = taskRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new UnauthorizedException("Task not found for this user"));
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found for this user"));
 
         existingTask.setTitle(updatedTask.getTitle());
         existingTask.setDescription(updatedTask.getDescription());
@@ -106,12 +100,11 @@ public class TaskController {
     @DeleteMapping("/{id}")
     public String deleteTask(
             @PathVariable Long id,
-            @RequestHeader(value = "Authorization", required = false) String authHeader
-    ) {
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         AppUser user = getCurrentUser(authHeader);
 
         Task existingTask = taskRepository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new UnauthorizedException("Task not found for this user"));
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         taskRepository.delete(existingTask);
 
