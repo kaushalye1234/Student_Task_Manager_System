@@ -1,23 +1,25 @@
 # Build stage
-FROM node:20-alpine AS build
+FROM node:22-bookworm-slim AS build
+
 WORKDIR /app
 
-# Copy package configurations and install dependencies
-COPY package*.json ./
-RUN npm ci
+# Public backend URL used while Vite builds the frontend
+ARG VITE_API_BASE_URL=http://localhost:8080
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
-# Copy the rest of the application files and build the production assets
+# Install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+# Build the production frontend
 COPY . .
 RUN npm run build
 
-# Run stage
+# Production stage
 FROM nginx:alpine
 
-# Copy built assets to Nginx html directory
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80 for HTTP traffic
 EXPOSE 80
 
-# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

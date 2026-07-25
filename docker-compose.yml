@@ -3,15 +3,29 @@ services:
     image: mysql:8.0
     container_name: task-manager-db
     restart: always
+
     environment:
-      MYSQL_ROOT_PASSWORD:  ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: task_manager_db
+
     ports:
       - "3307:3306"
+
     volumes:
       - mysql_data:/var/lib/mysql
+
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}"
+        ]
       timeout: 10s
       retries: 5
       interval: 10s
@@ -20,8 +34,10 @@ services:
     build: ./backend
     container_name: task-manager-backend
     restart: always
+
     ports:
       - "8080:8080"
+
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/task_manager_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
@@ -29,16 +45,23 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       APP_JWT_SECRET: ${APP_JWT_SECRET}
       APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
+
     depends_on:
       db:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8080}"
+
     container_name: task-manager-frontend
     restart: always
+
     ports:
       - "80:80"
+
     depends_on:
       - backend
 

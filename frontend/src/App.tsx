@@ -9,6 +9,11 @@ type FilterStatus = "ALL" | TaskStatus;
 type FilterPriority = "ALL" | TaskPriority;
 type AuthMode = "LOGIN" | "REGISTER";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:8080"
+).replace(/\/+$/, "");
+
 interface AuthUser {
   id: number;
   fullName: string;
@@ -38,8 +43,8 @@ function App() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const API_URL = "http://localhost:8080/api/tasks";
-  const AUTH_URL = "http://localhost:8080/api/auth";
+  const API_URL = `${API_BASE_URL}/api/tasks`;
+  const AUTH_URL = `${API_BASE_URL}/api/auth`;
   const isTokenExpired = (token: string) => {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
@@ -233,7 +238,7 @@ function App() {
 
     try {
       const response = await axios.post<{ suggestions: string[] }>(
-        "http://localhost:8080/api/ai/suggest-tasks",
+        `${API_BASE_URL}/api/ai/suggest-tasks`,
         { topic: aiTopic }
       );
 
